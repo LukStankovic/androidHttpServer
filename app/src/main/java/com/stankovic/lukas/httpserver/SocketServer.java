@@ -55,75 +55,78 @@ public class SocketServer extends Thread {
                 int lineCount = 0;
                 String method = "", uri = "";
 
-                while (!line.isEmpty()) {
+                try {
+                    while (line != null && !line.isEmpty()) {
 
-                    if (lineCount == 0) {
-                        method = getHttpMethod(line);
-                        uri = getHttpUri(line);
+                        if (lineCount == 0) {
+                            method = getHttpMethod(line);
+                            uri = getHttpUri(line);
+                        }
+
+                        lineCount++;
+                        line = in.readLine();
                     }
 
-                    lineCount++;
-                    line = in.readLine();
-                }
 
+                    String externalStorageDirectoryPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+                    String filePath = externalStorageDirectoryPath + uri;
 
-                String externalStorageDirectoryPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-                String filePath = externalStorageDirectoryPath + uri;
+                    File file = new File(filePath);
 
-                File file = new File(filePath);
-                Log.d("LS_SERVER", file.getAbsolutePath());
-                Log.d("LS_SERVER", "file.extists(): " + file.exists());
-                if (!file.exists()) {
-                    Response response = new Response(HttpStatusCode.NOT_FOUND, "text/html", null, null);
-                    out.write(response.getResponse());
+                    if (!file.exists()) {
+                        Response response = new Response(HttpStatusCode.NOT_FOUND, null, null, null);
+                        out.write(response.getResponse());
 
-                    out.flush();
-                    s.close();
-                } else {
-                    Log.d("LS_SERVER", "file.isFile(): " + file.isFile());
-                    if (file.isFile()) {
-                        String fileType = getFileType(filePath);
-                        out.write(
-                        "HTTP/1.0 200 OK\n" +
-                            "Content-Type: " + fileType + "\n" +
-                            "Content-Length:" + file.length() + "\n" +
-                            "\n"
-                        );
                         out.flush();
-                        FileInputStream fileInputStream = new FileInputStream(file);
-                        byte[] fileBytes = new byte[2048];
-                        while (fileInputStream.read(fileBytes) != 0) {
-                            o.write(fileBytes);
-                        }
-                        o.flush();
                     } else {
-                        File directory = new File(filePath + "/");
-                        Log.d("LS_SERVER", "directory: " + directory.getAbsolutePath());
-                        File[] foldersAndFiles = directory.listFiles();
-                        if (foldersAndFiles != null) {
-                            out.write(
-                            "HTTP/1.0 200 OK\n" +
-                                "Content-Type: text/html\n" +
-                                "\n" +
-                                "<html>\n" +
-                                "<body>\n" +
-                                "<h1>Adresar</h1>\n" +
-                                "<ul>"
-                            );
+                        if (file.isFile()) {
+                            String fileType = getFileType(filePath);
+                            Response response = new Response(HttpStatusCode.OK, fileType, file.length(), null);
 
-                            // TODO LS if is not root /
-                            out.write("<li><a href='../'><--</a></li>\n");
+                            out.write(response.getResponseHeader());
+                            out.flush();
 
-                            for (File folderOrFile : foldersAndFiles) {
-                                out.write("<li><a href='" + folderOrFile.getName() + "/'>" + folderOrFile.getName() + "</a></li>\n");
+                            FileInputStream fileInputStream = new FileInputStream(file);
+                            byte[] fileBytes = new byte[2048];
+                            while (fileInputStream.read(fileBytes) != 0) {
+                                o.write(fileBytes);
                             }
-                            out.write("</ul></body>\n" + "</html>\n");
-                        }
+                            o.flush();
+                        } else {
+                            File directory = new File(filePath + "/");
+                            File[] foldersAndFiles = directory.listFiles();
+                            if (foldersAndFiles != null) {
+                                Response response = new Response(HttpStatusCode.OK, null, null, null);
+                                StringBuilder body = new StringBuilder("<h1>Folder structure</h1>");
 
-                        out.flush();
+                                // TODO LS if is not root /
+                                body.append("<li><a href='../'><--</a></li>\n");
+
+                                for (File folderOrFile : foldersAndFiles) {
+                                    body.append("<li><a href='").append(folderOrFile.getName());
+
+                                    if (folderOrFile.isDirectory()) {
+                                        body.append("/");
+                                    }
+
+                                   body.append("'>").append(folderOrFile.getName()).append("</a></li>\n");
+                                }
+                                body.append("</ul>\n");
+
+                                response.setBody(body.toString());
+                                response.buildBasicHtmlBodyPage();
+
+                                out.write(response.getResponse());
+                            }
+
+                            out.flush();
+                        }
+                        Log.d("LS_SERVER", "Socket Closed");
                     }
+                } catch (Exception e) {
+                    Log.e("LS_SERVER", "ERROR: " + e.getMessage());
+                } finally {
                     s.close();
-                    Log.d("SERVER", "Socket Closed");
                 }
             }
         } catch (IOException e) {
@@ -154,6 +157,11 @@ public class SocketServer extends Thread {
 
     private static String getFileType(String url) {
         String type = null;
+
+        if (url.charAt(url.length() - 1) == '/') {
+            url = url.substring(0, url.length() - 1);;
+        }
+
         String extension = MimeTypeMap.getFileExtensionFromUrl(url);
         if (extension != null) {
             MimeTypeMap mime = MimeTypeMap.getSingleton();

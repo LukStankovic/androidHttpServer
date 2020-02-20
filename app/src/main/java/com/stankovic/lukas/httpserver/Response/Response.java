@@ -6,15 +6,15 @@ public class Response {
 
     private String contentType;
 
-    private String contentLength;
+    private Long contentLength;
 
     private String body;
 
     private String response;
 
-    public Response(HttpStatusCode httpStatusCode, String contentType, String contentLength, String body) {
+    public Response(HttpStatusCode httpStatusCode, String contentType, Long contentLength, String body) {
         this.httpStatusCode = httpStatusCode;
-        this.contentType = contentType;
+        this.contentType = contentType == null ? "text/html" : contentType;
         this.contentLength = contentLength;
         this.response = "";
     }
@@ -30,9 +30,20 @@ public class Response {
         return response;
     }
 
+    public String getResponseHeader() {
+        return getHttpHeader();
+    }
+
+    public void buildBasicHtmlBodyPage() {
+        body =  "<html><body>" + body + "</body></html>";
+    }
+
     private String getHttpBody() {
-        if (body == null) {
-            return "<html><body>Not Found!</body></html>";
+        if (body == null && httpStatusCode == HttpStatusCode.NOT_FOUND) {
+            body = "Not Found!";
+            buildBasicHtmlBodyPage();
+
+            return body;
         }
 
         return body;
@@ -42,7 +53,7 @@ public class Response {
         String httpHeader = "HTTP/1.0 " + httpStatusCode.getHttpStatusCodeHeadText() + "\n" +
             "Content-Type: " + contentType + "\n";
 
-        if (contentLength != null){
+        if (contentLength != null) {
             httpHeader += "Content-Length:" + contentLength + "\n";
         }
         httpHeader += "\n";
