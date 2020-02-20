@@ -4,22 +4,21 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.file.Files;
 
 import android.os.Environment;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
-import com.stankovic.lukas.httpserver.Response.HttpStatusCode;
-import com.stankovic.lukas.httpserver.Response.Response;
+import com.stankovic.lukas.httpserver.File.FileReader;
+import com.stankovic.lukas.httpserver.Http.Request.RequestReader;
+import com.stankovic.lukas.httpserver.Http.Response.HttpStatusCode;
+import com.stankovic.lukas.httpserver.Http.Response.Response;
 
 public class SocketServer extends Thread {
 
@@ -39,39 +38,21 @@ public class SocketServer extends Thread {
 
     public void run() {
         try {
-            Log.d("SERVER", "Creating Socket");
             serverSocket = new ServerSocket(port);
             bRunning = true;
-            while (bRunning) {
-                Log.d("SERVER", "Socket Waiting for connection");
-                Socket s = serverSocket.accept();
-                Log.d("SERVER", "Socket Accepted");
 
+            while (bRunning) {
+                Socket s = serverSocket.accept();
                 OutputStream o = s.getOutputStream();
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(o));
                 BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
 
-                String line = in.readLine();
-                int lineCount = 0;
-                String method = "", uri = "";
-
                 try {
-                    while (line != null && !line.isEmpty()) {
+                    RequestReader requestReader = new RequestReader(s, o, in);
+                    requestReader.read();
 
-                        if (lineCount == 0) {
-                            method = getHttpMethod(line);
-                            uri = getHttpUri(line);
-                        }
-
-                        lineCount++;
-                        line = in.readLine();
-                    }
-
-
-                    String externalStorageDirectoryPath = Environment.getExternalStorageDirectory().getAbsolutePath();
-                    String filePath = externalStorageDirectoryPath + uri;
-
-                    File file = new File(filePath);
+                    FileReader fileReader = new FileReader(requestReader.getUri());
+                    File file = fileReader.getFile();
 
                     if (!file.exists()) {
                         Response response = new Response(HttpStatusCode.NOT_FOUND, null, null, null);
@@ -80,8 +61,9 @@ public class SocketServer extends Thread {
                         out.flush();
                     } else {
                         if (file.isFile()) {
-                            String fileType = getFileType(filePath);
-                            Response response = new Response(HttpStatusCode.OK, fileType, file.length(), null);
+                            Response response = new Response(
+                                HttpStatusCode.OK, fileReader.getFileType(), file.length(), null
+                            );
 
                             out.write(response.getResponseHeader());
                             out.flush();
@@ -92,11 +74,13 @@ public class SocketServer extends Thread {
                                 o.write(fileBytes);
                             }
                             o.flush();
+
                         } else {
-                            File directory = new File(filePath + "/");
-                            File[] foldersAndFiles = directory.listFiles();
+                            File[] foldersAndFiles = file.listFiles();
                             if (foldersAndFiles != null) {
-                                Response response = new Response(HttpStatusCode.OK, null, null, null);
+                                Response response = new Response(
+                                        HttpStatusCode.OK, null, null, null
+                                );
                                 StringBuilder body = new StringBuilder("<h1>Folder structure</h1>");
 
                                 // TODO LS if is not root /
@@ -121,7 +105,6 @@ public class SocketServer extends Thread {
 
                             out.flush();
                         }
-                        Log.d("LS_SERVER", "Socket Closed");
                     }
                 } catch (Exception e) {
                     Log.e("LS_SERVER", "ERROR: " + e.getMessage());
@@ -140,35 +123,6 @@ public class SocketServer extends Thread {
             serverSocket = null;
             bRunning = false;
         }
-    }
-
-
-    private String getHttpMethod(String line) {
-        String[] parts = line.split(" ");
-
-        return parts[0];
-    }
-
-    private String getHttpUri(String line) {
-        String[] parts = line.split(" ");
-
-        return parts[1];
-    }
-
-    private static String getFileType(String url) {
-        String type = null;
-
-        if (url.charAt(url.length() - 1) == '/') {
-            url = url.substring(0, url.length() - 1);;
-        }
-
-        String extension = MimeTypeMap.getFileExtensionFromUrl(url);
-        if (extension != null) {
-            MimeTypeMap mime = MimeTypeMap.getSingleton();
-            type = mime.getMimeTypeFromExtension(extension);
-        }
-
-        return type;
     }
 
 }

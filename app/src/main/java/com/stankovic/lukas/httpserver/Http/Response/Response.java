@@ -1,4 +1,4 @@
-package com.stankovic.lukas.httpserver.Response;
+package com.stankovic.lukas.httpserver.Http.Response;
 
 public class Response {
 
