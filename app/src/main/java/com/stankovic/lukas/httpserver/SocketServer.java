@@ -3,7 +3,6 @@ package com.stankovic.lukas.httpserver;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -11,14 +10,13 @@ import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import android.os.Environment;
 import android.util.Log;
-import android.webkit.MimeTypeMap;
 
 import com.stankovic.lukas.httpserver.File.FileReader;
 import com.stankovic.lukas.httpserver.Http.Request.RequestReader;
 import com.stankovic.lukas.httpserver.Http.Response.HttpStatusCode;
 import com.stankovic.lukas.httpserver.Http.Response.Response;
+import com.stankovic.lukas.httpserver.Http.Response.ResponseWriter;
 
 public class SocketServer extends Thread {
 
@@ -54,56 +52,31 @@ public class SocketServer extends Thread {
                     FileReader fileReader = new FileReader(requestReader.getUri());
                     File file = fileReader.getFile();
 
+                    ResponseWriter responseWriter = new ResponseWriter(out, o);
+
                     if (!file.exists()) {
                         Response response = new Response(HttpStatusCode.NOT_FOUND, null, null, null);
-                        out.write(response.getResponse());
-
-                        out.flush();
+                        responseWriter.setResponse(response);
+                        responseWriter.writeResponseAndFlush();
                     } else {
                         if (file.isFile()) {
                             Response response = new Response(
                                 HttpStatusCode.OK, fileReader.getFileType(), file.length(), null
                             );
-
-                            out.write(response.getResponseHeader());
-                            out.flush();
-
-                            FileInputStream fileInputStream = new FileInputStream(file);
-                            byte[] fileBytes = new byte[2048];
-                            while (fileInputStream.read(fileBytes) != 0) {
-                                o.write(fileBytes);
-                            }
-                            o.flush();
-
+                            responseWriter.setResponse(response);
+                            responseWriter.writeResponseHeaderAndFlush();
+                            responseWriter.writeFileAndFlush(file);
                         } else {
                             File[] foldersAndFiles = file.listFiles();
                             if (foldersAndFiles != null) {
                                 Response response = new Response(
-                                        HttpStatusCode.OK, null, null, null
+                                    HttpStatusCode.OK, null, null, null
                                 );
-                                StringBuilder body = new StringBuilder("<h1>Folder structure</h1>");
-
-                                // TODO LS if is not root /
-                                body.append("<li><a href='../'><--</a></li>\n");
-
-                                for (File folderOrFile : foldersAndFiles) {
-                                    body.append("<li><a href='").append(folderOrFile.getName());
-
-                                    if (folderOrFile.isDirectory()) {
-                                        body.append("/");
-                                    }
-
-                                   body.append("'>").append(folderOrFile.getName()).append("</a></li>\n");
-                                }
-                                body.append("</ul>\n");
-
-                                response.setBody(body.toString());
-                                response.buildBasicHtmlBodyPage();
-
-                                out.write(response.getResponse());
+                                responseWriter.setResponse(response);
+                                responseWriter.writeListingAndFlush(foldersAndFiles);
                             }
 
-                            out.flush();
+                            responseWriter.flush();
                         }
                     }
                 } catch (Exception e) {
