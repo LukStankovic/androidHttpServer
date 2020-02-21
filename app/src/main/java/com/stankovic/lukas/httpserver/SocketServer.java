@@ -13,16 +13,26 @@ import java.net.Socket;
 import android.util.Log;
 
 import com.stankovic.lukas.httpserver.File.FileReader;
+import com.stankovic.lukas.httpserver.Http.Request.RequestHandler;
 import com.stankovic.lukas.httpserver.Http.Request.RequestReader;
 import com.stankovic.lukas.httpserver.Http.Response.HttpStatusCode;
 import com.stankovic.lukas.httpserver.Http.Response.Response;
 import com.stankovic.lukas.httpserver.Http.Response.ResponseWriter;
+
+import javax.inject.Inject;
 
 public class SocketServer extends Thread {
 
     ServerSocket serverSocket;
     public final int port = 12345;
     boolean bRunning;
+
+    private RequestHandler requestHandler;
+
+    @Inject
+    public SocketServer(RequestHandler requestHandler) {
+        this.requestHandler = requestHandler;
+    }
 
     public void close() {
         try {
