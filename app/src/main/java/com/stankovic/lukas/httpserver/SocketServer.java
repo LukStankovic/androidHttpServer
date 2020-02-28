@@ -10,19 +10,25 @@ import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+
+import android.os.Handler;
 import android.util.Log;
 
-import com.stankovic.lukas.httpserver.File.FileReader;
-import com.stankovic.lukas.httpserver.Http.Request.RequestReader;
-import com.stankovic.lukas.httpserver.Http.Response.HttpStatusCode;
-import com.stankovic.lukas.httpserver.Http.Response.Response;
-import com.stankovic.lukas.httpserver.Http.Response.ResponseWriter;
+import com.stankovic.lukas.httpserver.Http.Request.RequestHandler;
 
 public class SocketServer extends Thread {
 
     ServerSocket serverSocket;
     public final int port = 12345;
     boolean bRunning;
+
+    private Handler loggingHandler;
+
+    public SocketServer(Handler handler) {
+        super();
+
+        this.loggingHandler = handler;
+    }
 
     public void close() {
         try {
@@ -41,49 +47,8 @@ public class SocketServer extends Thread {
 
             while (bRunning) {
                 Socket s = serverSocket.accept();
-                OutputStream o = s.getOutputStream();
-                BufferedWriter out = new BufferedWriter(new OutputStreamWriter(o));
-                BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-
-                try {
-                    RequestReader requestReader = new RequestReader(s, o, in);
-                    requestReader.read();
-
-                    FileReader fileReader = new FileReader(requestReader.getUri());
-                    File file = fileReader.getFile();
-
-                    ResponseWriter responseWriter = new ResponseWriter(out, o);
-
-                    if (!file.exists()) {
-                        Response response = new Response(HttpStatusCode.NOT_FOUND, null, null, null);
-                        responseWriter.setResponse(response);
-                        responseWriter.writeResponseAndFlush();
-                    } else {
-                        if (file.isFile()) {
-                            Response response = new Response(
-                                HttpStatusCode.OK, fileReader.getFileType(), file.length(), null
-                            );
-                            responseWriter.setResponse(response);
-                            responseWriter.writeResponseHeaderAndFlush();
-                            responseWriter.writeFileAndFlush(file);
-                        } else {
-                            File[] foldersAndFiles = file.listFiles();
-                            if (foldersAndFiles != null) {
-                                Response response = new Response(
-                                    HttpStatusCode.OK, null, null, null
-                                );
-                                responseWriter.setResponse(response);
-                                responseWriter.writeListingAndFlush(foldersAndFiles);
-                            }
-
-                            responseWriter.flush();
-                        }
-                    }
-                } catch (Exception e) {
-                    Log.e("LS_SERVER", "ERROR: " + e.getMessage());
-                } finally {
-                    s.close();
-                }
+                Thread requestHandlerThread = new Thread(new RequestHandler(s, loggingHandler));
+                requestHandlerThread.start();
             }
         } catch (IOException e) {
             if (serverSocket != null && serverSocket.isClosed())
