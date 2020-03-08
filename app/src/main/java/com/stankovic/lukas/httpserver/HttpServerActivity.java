@@ -12,6 +12,7 @@ import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.stankovic.lukas.httpserver.Libs.SizeConverter;
@@ -22,8 +23,7 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 
 	private int transferedBytes = 0;
 
-    private static final long  MEGABYTE = 1024L * 1024L;
-
+	private EditText etMaxThreads;
 
     private Handler handler = new Handler(Looper.getMainLooper()) {
 
@@ -58,13 +58,15 @@ public class HttpServerActivity extends Activity implements OnClickListener{
         btn2.setOnClickListener(this);
         TextView textView = findViewById(R.id.textView);
         textView.setMovementMethod(new ScrollingMovementMethod());
+
+        etMaxThreads = (EditText) findViewById(R.id.etMaxThreads);
     }
 
 	@Override
 	public void onClick(View v) {
 		// TODO Auto-generated method stub
 		if (v.getId() == R.id.button1) {
-			s = new SocketServer(handler);
+			s = new SocketServer(handler, etMaxThreads);
 			s.start();
 		}
 		if (v.getId() == R.id.button2) {

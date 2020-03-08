@@ -66,8 +66,6 @@ public class Response {
         if (body == null && httpStatusCode == HttpStatusCode.NOT_FOUND) {
             body = "Not Found!";
             buildBasicHtmlBodyPage();
-
-            return body;
         }
 
         return body;

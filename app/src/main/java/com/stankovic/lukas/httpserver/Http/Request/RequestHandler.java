@@ -25,8 +25,11 @@ import java.io.OutputStreamWriter;
 import java.lang.reflect.Array;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
 
 public class RequestHandler implements Runnable {
+
+    private final Semaphore semaphore;
 
     private Socket socket;
 
@@ -40,10 +43,12 @@ public class RequestHandler implements Runnable {
 
     public RequestHandler(
             Socket socket,
-            Handler loggingHandler
+            Handler loggingHandler,
+            Semaphore semaphore
     ) {
         this.socket = socket;
         this.loggingHandler = loggingHandler;
+        this.semaphore = semaphore;
     }
 
     @Override
@@ -67,11 +72,13 @@ public class RequestHandler implements Runnable {
             } finally {
                 sendMessage("request", requestReader.getMethod() + " " + requestReader.getUri() + " (" + SizeConverter.formatFileSize(response.getContentLength()) + ")");
                 sendMessage("transferred_bytes", String.valueOf(response.getContentLength()));
+                semaphore.release();
                 socket.close();
             }
 
         } catch (IOException e) {
             Log.e("LS_SERVER", "error");
+            sendMessage("request", "IOException  - " + e.getMessage());
         }
     }
 

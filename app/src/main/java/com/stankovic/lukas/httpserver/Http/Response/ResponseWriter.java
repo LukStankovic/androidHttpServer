@@ -30,8 +30,9 @@ public class ResponseWriter {
     public void writeFileAndFlush(File file) throws IOException {
         FileInputStream fileInputStream = new FileInputStream(file);
         byte[] fileBytes = new byte[2048];
-        while (fileInputStream.read(fileBytes) != 0) {
-            outputStream.write(fileBytes);
+        int length;
+        while ((length = fileInputStream.read(fileBytes)) != 0) {
+            outputStream.write(fileBytes, 0, length);
         }
         outputStream.flush();
     }
