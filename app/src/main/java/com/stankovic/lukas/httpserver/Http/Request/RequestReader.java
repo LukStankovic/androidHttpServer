@@ -1,5 +1,7 @@
 package com.stankovic.lukas.httpserver.Http.Request;
 
+import android.util.Log;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -40,6 +42,10 @@ public class RequestReader {
 
             lineCount++;
             line = bufferedReader.readLine();
+        }
+
+        if (method == null || uri == null) {
+            throw new IOException("Method or URI is null (method: " + method + ", URI: " + uri + ")");
         }
     }
 

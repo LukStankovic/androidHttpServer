@@ -32,7 +32,7 @@ public class FileReader {
         String type = null;
 
         if (path.charAt(path.length() - 1) == '/') {
-            path = path.substring(0, path.length() - 1);;
+            path = path.substring(0, path.length() - 1);
         }
 
         String extension = MimeTypeMap.getFileExtensionFromUrl(path);
