@@ -62,9 +62,12 @@ public class SocketServer extends Thread {
                 Socket s = serverSocket.accept();
                 Log.d("LS_SERVER", "available: " + semaphore.availablePermits());
 
-                semaphore.acquire();
-                Thread requestHandlerThread = new Thread(new RequestHandler(s, loggingHandler, semaphore));
-                requestHandlerThread.start();
+               if (semaphore.tryAcquire()) {
+                    Thread requestHandlerThread = new Thread(new RequestHandler(s, loggingHandler, semaphore));
+                    requestHandlerThread.start();
+               } else {
+                    Log.e("LS_SERVER", "Server busy");
+               }
             }
         } catch (IOException e) {
             if (serverSocket != null && serverSocket.isClosed())
@@ -73,8 +76,6 @@ public class SocketServer extends Thread {
                 Log.d("SERVER", "Error");
                 e.printStackTrace();
             }
-        } catch (InterruptedException e) {
-            Log.e("LS_SERVER", e.getMessage());
         } finally {
             serverSocket = null;
             bRunning = false;

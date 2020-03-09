@@ -30,7 +30,7 @@ public class ResponseWriter {
     public void writeFileAndFlush(File file) throws IOException {
         FileInputStream fileInputStream = new FileInputStream(file);
         byte[] fileBytes = new byte[2048];
-        int length;
+        int length = 0;
         while ((length = fileInputStream.read(fileBytes)) != 0) {
             outputStream.write(fileBytes, 0, length);
         }
@@ -40,7 +40,6 @@ public class ResponseWriter {
     public void writeListingAndFlush(File[] filesAndFolders) throws IOException {
         StringBuilder body = new StringBuilder("<h1>Folder structure</h1>");
 
-        // TODO LS if is not root /
         body.append("<li><a href='../'><--</a></li>\n");
 
         for (File folderOrFile : filesAndFolders) {

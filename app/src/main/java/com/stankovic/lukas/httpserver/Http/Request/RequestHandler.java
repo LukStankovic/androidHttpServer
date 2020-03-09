@@ -66,12 +66,18 @@ public class RequestHandler implements Runnable {
                 response = new Response(responseWriter);
 
                 handleRequest();
+            } catch (IOException e){
+                Log.e("LS_SERVER", "IOException: " + e.getMessage());
             } catch (Exception e) {
                 Log.e("LS_SERVER", "ERROR: " + e.getMessage());
+                Log.e("LS_SERVER", "ERROR: " + e.getStackTrace());
                 sendMessage("request", "---------------\nError: " + e.getMessage() + "\n---------------");
             } finally {
-                sendMessage("request", requestReader.getMethod() + " " + requestReader.getUri() + " (" + SizeConverter.formatFileSize(response.getContentLength()) + ")");
-                sendMessage("transferred_bytes", String.valueOf(response.getContentLength()));
+                if (requestReader != null && response != null) {
+                    sendMessage("request", requestReader.getMethod() + " " + requestReader.getUri() + " (" + SizeConverter.formatFileSize(response.getContentLength()) + ")");
+                    sendMessage("transferred_bytes", String.valueOf(response.getContentLength()));
+                }
+
                 semaphore.release();
                 socket.close();
             }
