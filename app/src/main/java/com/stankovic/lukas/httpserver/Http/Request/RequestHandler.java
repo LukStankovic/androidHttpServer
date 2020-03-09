@@ -6,6 +6,7 @@ import android.os.Message;
 import android.util.Log;
 
 import com.stankovic.lukas.httpserver.Controller.BaseController;
+import com.stankovic.lukas.httpserver.Controller.CameraSnapshotController;
 import com.stankovic.lukas.httpserver.Controller.FileController;
 import com.stankovic.lukas.httpserver.Controller.ListingController;
 import com.stankovic.lukas.httpserver.Controller.NotFoundController;
@@ -74,8 +75,9 @@ public class RequestHandler implements Runnable {
                 sendMessage("request", "---------------\nError: " + e.getMessage() + "\n---------------");
             } finally {
                 if (requestReader != null && response != null) {
-                    sendMessage("request", requestReader.getMethod() + " " + requestReader.getUri() + " (" + SizeConverter.formatFileSize(response.getContentLength()) + ")");
-                    sendMessage("transferred_bytes", String.valueOf(response.getContentLength()));
+                    // TODO LS
+                    //sendMessage("request", requestReader.getMethod() + " " + requestReader.getUri() + " (" + SizeConverter.formatFileSize(response.getContentLength()) + ")");
+                    //sendMessage("transferred_bytes", String.valueOf(response.getContentLength()));
                 }
 
                 semaphore.release();
@@ -102,7 +104,10 @@ public class RequestHandler implements Runnable {
         FileReader fileReader = new FileReader(requestReader.getUri());
         File file = fileReader.getFile();
 
-        if (!file.exists()) {
+        Log.d("LS_SERVER", requestReader.getUri());
+        if (requestReader.getUri().equals("/camera/snapshot/") || requestReader.getUri().equals("/camera/snapshot")) {
+            controller = new CameraSnapshotController(response);
+        } else if (!file.exists()) {
             controller = new NotFoundController(response);
         } else {
             if (file.isFile()) {
