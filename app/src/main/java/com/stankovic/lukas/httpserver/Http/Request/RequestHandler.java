@@ -1,5 +1,6 @@
 package com.stankovic.lukas.httpserver.Http.Request;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -7,11 +8,11 @@ import android.util.Log;
 
 import com.stankovic.lukas.httpserver.Controller.BaseController;
 import com.stankovic.lukas.httpserver.Controller.CameraSnapshotController;
+import com.stankovic.lukas.httpserver.Controller.CameraStreamController;
 import com.stankovic.lukas.httpserver.Controller.FileController;
 import com.stankovic.lukas.httpserver.Controller.ListingController;
 import com.stankovic.lukas.httpserver.Controller.NotFoundController;
 import com.stankovic.lukas.httpserver.File.FileReader;
-import com.stankovic.lukas.httpserver.Http.Response.HttpStatusCode;
 import com.stankovic.lukas.httpserver.Http.Response.Response;
 import com.stankovic.lukas.httpserver.Http.Response.ResponseWriter;
 import com.stankovic.lukas.httpserver.Libs.SizeConverter;
@@ -23,14 +24,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.lang.reflect.Array;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 
 public class RequestHandler implements Runnable {
 
     private final Semaphore semaphore;
+
+    private Context context;
 
     private Socket socket;
 
@@ -45,11 +46,13 @@ public class RequestHandler implements Runnable {
     public RequestHandler(
             Socket socket,
             Handler loggingHandler,
-            Semaphore semaphore
+            Semaphore semaphore,
+            Context context
     ) {
         this.socket = socket;
         this.loggingHandler = loggingHandler;
         this.semaphore = semaphore;
+        this.context = context;
     }
 
     @Override
@@ -71,13 +74,20 @@ public class RequestHandler implements Runnable {
                 Log.e("LS_SERVER", "IOException: " + e.getMessage());
             } catch (Exception e) {
                 Log.e("LS_SERVER", "ERROR: " + e.getMessage());
-                Log.e("LS_SERVER", "ERROR: " + e.getStackTrace());
+                StackTraceElement[] traceElements = e.getStackTrace();
+
+                StringBuilder sb = new StringBuilder();
+
+                for (StackTraceElement st : traceElements) {
+                    Log.e("LS_SERVER", "ERROR: " + st);
+                }
+
+
                 sendMessage("request", "---------------\nError: " + e.getMessage() + "\n---------------");
             } finally {
-                if (requestReader != null && response != null) {
-                    // TODO LS
-                    //sendMessage("request", requestReader.getMethod() + " " + requestReader.getUri() + " (" + SizeConverter.formatFileSize(response.getContentLength()) + ")");
-                    //sendMessage("transferred_bytes", String.valueOf(response.getContentLength()));
+                if (requestReader != null && response != null && response.getContentLength() != null) {
+                    sendMessage("request", requestReader.getMethod() + " " + requestReader.getUri() + " (" + SizeConverter.formatFileSize(response.getContentLength()) + ")");
+                    sendMessage("transferred_bytes", String.valueOf(response.getContentLength()));
                 }
 
                 semaphore.release();
@@ -104,9 +114,10 @@ public class RequestHandler implements Runnable {
         FileReader fileReader = new FileReader(requestReader.getUri());
         File file = fileReader.getFile();
 
-        Log.d("LS_SERVER", requestReader.getUri());
         if (requestReader.getUri().equals("/camera/snapshot/") || requestReader.getUri().equals("/camera/snapshot")) {
             controller = new CameraSnapshotController(response);
+        } else if (requestReader.getUri().equals("/camera/stream/") || requestReader.getUri().equals("/camera/stream")) {
+            controller = new CameraStreamController(response, socket, context);
         } else if (!file.exists()) {
             controller = new NotFoundController(response);
         } else {

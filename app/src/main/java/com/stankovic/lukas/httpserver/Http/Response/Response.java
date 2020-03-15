@@ -39,6 +39,18 @@ public class Response {
         responseWriter.writeFileAndFlush(file);
     }
 
+    public void returnMJpegStream(byte[] takenImage) throws IOException {
+        this.setContentLength(null);
+        responseWriter.setResponse(this);
+        responseWriter.writeResponseHeaderAndFlush();
+
+        responseWriter.writeAndFlush("--lsboundary\n");
+        responseWriter.writeAndFlush("Content-Type: image/jpeg\n");
+        responseWriter.writeAndFlush("Content-Length: " + takenImage.length + "\n\n");
+
+        responseWriter.writeBytesAndFlush(takenImage);
+    }
+
     public void returnListingResponse(File[] foldersAndFiles) throws IOException {
         responseWriter.setResponse(this);
         responseWriter.writeListingAndFlush(foldersAndFiles);

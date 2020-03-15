@@ -1,6 +1,9 @@
 package com.stankovic.lukas.httpserver.Http.Response;
 
+import android.util.Log;
+
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -31,9 +34,17 @@ public class ResponseWriter {
         FileInputStream fileInputStream = new FileInputStream(file);
         byte[] fileBytes = new byte[2048];
         int length = 0;
-        while ((length = fileInputStream.read(fileBytes)) != 0) {
+        while ((length = fileInputStream.read(fileBytes)) != -1) {
             outputStream.write(fileBytes, 0, length);
         }
+        outputStream.flush();
+    }
+
+    public void writeBytesAndFlush(byte[] takenImage) throws IOException {
+        for(byte b : takenImage){
+            outputStream.write(b);
+        }
+
         outputStream.flush();
     }
 
@@ -62,6 +73,7 @@ public class ResponseWriter {
         bufferedWriter.flush();
     }
 
+
     public void writeResponseHeaderAndFlush() throws IOException {
         writeAndFlush(response.getResponseHeader());
     }
@@ -82,4 +94,6 @@ public class ResponseWriter {
         bufferedWriter.write(out);
         bufferedWriter.flush();
     }
+
+
 }

@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.util.concurrent.Semaphore;
 
 
+import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.EditText;
@@ -24,6 +25,7 @@ import com.stankovic.lukas.httpserver.Http.Response.ResponseWriter;
 
 public class SocketServer extends Thread {
 
+    private Context context;
     ServerSocket serverSocket;
     public final int port = 12345;
     boolean bRunning;
@@ -32,11 +34,12 @@ public class SocketServer extends Thread {
 
     private EditText eTMaxThreads;
 
-    public SocketServer(Handler handler, EditText eTMaxThreads) {
+    public SocketServer(Handler handler, EditText eTMaxThreads, Context context) {
         super();
 
         this.loggingHandler = handler;
         this.eTMaxThreads = eTMaxThreads;
+        this.context = context;
     }
 
     public void close() {
@@ -60,10 +63,9 @@ public class SocketServer extends Thread {
 
             while (bRunning) {
                 Socket s = serverSocket.accept();
-                Log.d("LS_SERVER", "available: " + semaphore.availablePermits());
 
                if (semaphore.tryAcquire()) {
-                    Thread requestHandlerThread = new Thread(new RequestHandler(s, loggingHandler, semaphore));
+                    Thread requestHandlerThread = new Thread(new RequestHandler(s, loggingHandler, semaphore, context));
                     requestHandlerThread.start();
                } else {
                     Log.e("LS_SERVER", "Server busy");

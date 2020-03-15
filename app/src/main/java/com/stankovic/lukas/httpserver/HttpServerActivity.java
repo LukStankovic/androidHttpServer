@@ -42,6 +42,8 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 
     private CameraPreview mPreview;
 
+    public static byte[] takenImage;
+
     private Handler handler = new Handler(Looper.getMainLooper()) {
 
         @Override
@@ -78,17 +80,17 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 
         etMaxThreads = (EditText) findViewById(R.id.etMaxThreads);
 
-
         mCamera = getCameraInstance();
-        mCamera.setDisplayOrientation(90);
+        Log.d("LS_SERVER", "mcamera: " + mCamera);
+        if (mCamera != null) {
+            mPreview = new CameraPreview(this, mCamera);
+            Log.d("LS_SERVER", "mPreview: " + mPreview);
+            FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+            preview.addView(mPreview);
 
-
-        mPreview = new CameraPreview(this, mCamera);
-        FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
-        preview.addView(mPreview);
-
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(cameraTakingPictures, 0, 3, TimeUnit.SECONDS);
+            ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+            executor.scheduleAtFixedRate(cameraTakingPictures, 0, 300, TimeUnit.MILLISECONDS);
+        }
     }
 
     Runnable cameraTakingPictures = new Runnable() {
@@ -102,7 +104,7 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 	public void onClick(View v) {
 		// TODO Auto-generated method stub
 		if (v.getId() == R.id.button1) {
-			s = new SocketServer(handler, etMaxThreads);
+			s = new SocketServer(handler, etMaxThreads, this);
 			s.start();
 		}
 		if (v.getId() == R.id.button2) {
@@ -119,7 +121,7 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
-            Log.d("LS_SERVER", "Path: " + Environment.getExternalStorageDirectory().getAbsolutePath());
+            takenImage = data;
             File pictureFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/snapshot.jpg");
 
             if (pictureFile == null){
@@ -139,15 +141,15 @@ public class HttpServerActivity extends Activity implements OnClickListener{
         }
     };
 
-
     public static Camera getCameraInstance(){
         Camera c = null;
         try {
-            c = Camera.open();
+            c = Camera.open(0);
         }
         catch (Exception e){
             Log.e("LS_SERVER", "Camera doesnt exists");
         }
         return c;
     }
+
 }
