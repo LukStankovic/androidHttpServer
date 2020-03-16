@@ -10,6 +10,7 @@ import com.stankovic.lukas.httpserver.File.FileReader;
 import com.stankovic.lukas.httpserver.Http.Response.HttpStatusCode;
 import com.stankovic.lukas.httpserver.Http.Response.Response;
 import com.stankovic.lukas.httpserver.HttpServerActivity;
+import com.stankovic.lukas.httpserver.Libs.SizeConverter;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -36,14 +37,15 @@ public class CameraStreamController extends BaseController {
 
     @Override
     public void render() throws IOException {
+        this.sendMessage("request", "GET /camera/stream/ (" + SizeConverter.formatFileSize(HttpServerActivity.takenImage.length) + ")");
         while (!socket.isClosed()) {
             byte[] takenImage = HttpServerActivity.takenImage;
             response.setHttpStatusCode(HttpStatusCode.OK);
             response.setContentType("multipart/x-mixed-replace;boundary=lsboundary");
             response.setContentLength((long) takenImage.length);
             response.returnMJpegStream(takenImage);
+            this.sendMessage("transferred_bytes", String.valueOf(takenImage.length));
        }
-
     }
 
 }

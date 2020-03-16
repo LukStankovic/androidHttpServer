@@ -1,6 +1,8 @@
 package com.stankovic.lukas.httpserver.Http.Response;
 
+import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,7 +72,6 @@ public class Response {
     public String getResponse() {
         addToResponse(getHttpHeader());
         addToResponse(getHttpBody());
-
         contentLength = (long)response.length();
 
         return response;
@@ -144,5 +145,9 @@ public class Response {
 
     public void setResponse(String response) {
         this.response = response;
+    }
+
+    public Handler getLoggingHandler() {
+        return loggingHandler;
     }
 }
