@@ -81,13 +81,9 @@ public class HttpServerActivity extends Activity implements OnClickListener{
         etMaxThreads = (EditText) findViewById(R.id.etMaxThreads);
 
         mCamera = getCameraInstance();
-        Log.d("LS_SERVER", "mcamera: " + mCamera);
+
         if (mCamera != null) {
             mPreview = new CameraPreview(this, mCamera);
-            Log.d("LS_SERVER", "mPreview: " + mPreview);
-            FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
-            preview.addView(mPreview);
-
             ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
             executor.scheduleAtFixedRate(cameraTakingPictures, 0, 300, TimeUnit.MILLISECONDS);
         }

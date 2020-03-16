@@ -24,35 +24,20 @@ public class CameraStreamController extends BaseController {
 
     private Socket socket;
 
-    private FileReader fileReader;
-
-    private File file;
-
-    byte[] takenImage;
-
-    private Camera mCamera;
-
-    private CameraPreview mPreview;
-
     public CameraStreamController() {
         super();
     }
 
-    public CameraStreamController(Response response, Socket socket, Context context) {
+    public CameraStreamController(Response response, Socket socket) {
         super();
         this.response = response;
-        this.fileReader = new FileReader("/snapshot.jpg");
-        file = fileReader.getFile();
         this.socket = socket;
     }
 
     @Override
     public void render() throws IOException {
-        Log.d("LS_SERVER", "mcamer:" + mCamera);
         while (!socket.isClosed()) {
-
-            takenImage = HttpServerActivity.takenImage;
-
+            byte[] takenImage = HttpServerActivity.takenImage;
             response.setHttpStatusCode(HttpStatusCode.OK);
             response.setContentType("multipart/x-mixed-replace;boundary=lsboundary");
             response.setContentLength((long) takenImage.length);

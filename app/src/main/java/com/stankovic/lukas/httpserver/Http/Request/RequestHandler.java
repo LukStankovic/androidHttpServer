@@ -67,7 +67,7 @@ public class RequestHandler implements Runnable {
                 requestReader.read();
 
                 ResponseWriter responseWriter = new ResponseWriter(out, o);
-                response = new Response(responseWriter);
+                response = new Response(responseWriter, loggingHandler);
 
                 handleRequest();
             } catch (IOException e){
@@ -81,7 +81,6 @@ public class RequestHandler implements Runnable {
                 for (StackTraceElement st : traceElements) {
                     Log.e("LS_SERVER", "ERROR: " + st);
                 }
-
 
                 sendMessage("request", "---------------\nError: " + e.getMessage() + "\n---------------");
             } finally {
@@ -117,7 +116,7 @@ public class RequestHandler implements Runnable {
         if (requestReader.getUri().equals("/camera/snapshot/") || requestReader.getUri().equals("/camera/snapshot")) {
             controller = new CameraSnapshotController(response);
         } else if (requestReader.getUri().equals("/camera/stream/") || requestReader.getUri().equals("/camera/stream")) {
-            controller = new CameraStreamController(response, socket, context);
+            controller = new CameraStreamController(response, socket);
         } else if (!file.exists()) {
             controller = new NotFoundController(response);
         } else {

@@ -1,5 +1,7 @@
 package com.stankovic.lukas.httpserver.Http.Response;
 
+import android.os.Handler;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -17,8 +19,11 @@ public class Response {
 
     private ResponseWriter responseWriter;
 
-    public Response(ResponseWriter responseWriter) {
+    private Handler loggingHandler;
+
+    public Response(ResponseWriter responseWriter, Handler loggingHandler) {
         this.responseWriter = responseWriter;
+        this.loggingHandler = loggingHandler;
     }
 
     public Response(HttpStatusCode httpStatusCode, String contentType, Long contentLength) {
@@ -37,6 +42,12 @@ public class Response {
         responseWriter.setResponse(this);
         responseWriter.writeResponseHeaderAndFlush();
         responseWriter.writeFileAndFlush(file);
+    }
+
+    public void returnBytesResponse(byte[] bytes) throws IOException {
+        responseWriter.setResponse(this);
+        responseWriter.writeResponseHeaderAndFlush();
+        responseWriter.writeBytesAndFlush(bytes);
     }
 
     public void returnMJpegStream(byte[] takenImage) throws IOException {

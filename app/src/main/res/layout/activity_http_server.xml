@@ -36,26 +36,12 @@
     <TextView
         android:id="@+id/textView"
         android:layout_width="match_parent"
-        android:layout_height="181dp"
+        android:layout_height="316dp"
         android:scrollbars="vertical" />
 
     <TextView
         android:id="@+id/transferedBytesTextView"
         android:layout_width="match_parent"
         android:layout_height="31dp" />
-    <FrameLayout
-        android:id="@+id/camera_preview"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:layout_weight="1"
-        />
-
-    <Button
-        android:id="@+id/button_capture"
-        android:text="Capture"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        />
 
 </LinearLayout>
