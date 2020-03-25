@@ -1,37 +1,26 @@
 package com.stankovic.lukas.httpserver;
 
-import android.graphics.ImageFormat;
-import android.graphics.Rect;
-import android.graphics.YuvImage;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.app.Activity;
-import android.os.Environment;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.StrictMode;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
-import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import com.stankovic.lukas.httpserver.Camera.CameraPreview;
 import com.stankovic.lukas.httpserver.Libs.SizeConverter;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class HttpServerActivity extends Activity implements OnClickListener{
 
@@ -41,14 +30,9 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 
 	private EditText etMaxThreads;
 
+    private boolean mIsBound;
 
-    private Camera mCamera;
-
-    private CameraPreview mPreview;
-
-
-
-    public static byte[] takenImage;
+    private HttpServerService mService = null;
 
     private Handler handler = new Handler(Looper.getMainLooper()) {
 
@@ -69,6 +53,22 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 
     };
 
+    private ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            mService = ((HttpServerService.LocalBinder)iBinder).getInstance();
+            mService.connect();
+            mService.setHandler(handler);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            Log.d("LS_SERVER", "zde");
+            mService.disconnect();
+            mService = null;
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,58 +85,60 @@ public class HttpServerActivity extends Activity implements OnClickListener{
         textView.setMovementMethod(new ScrollingMovementMethod());
 
         etMaxThreads = (EditText) findViewById(R.id.etMaxThreads);
-        mCamera = getCameraInstance();
 
-        if (mCamera != null) {
-            mCamera.startPreview();
-            mCamera.setPreviewCallback(mPreviewCallback);
-        }
     }
 
 
 	@Override
 	public void onClick(View v) {
 		// TODO Auto-generated method stub
-		if (v.getId() == R.id.button1) {
-			s = new SocketServer(handler, etMaxThreads, this);
-			s.start();
-		}
+        String etMaxThreadsText = String.valueOf(etMaxThreads.getText());
+        int maxThreads = !etMaxThreadsText.equals("") ? Integer.parseInt(etMaxThreadsText) : 0;
+
+        Intent serviceIntent = new Intent(HttpServerActivity.this, HttpServerService.class);
+        serviceIntent.putExtra("maxThreads", maxThreads);
+
+        if (v.getId() == R.id.button1) {
+			//s = new SocketServer(handler, etMaxThreads, this);
+			//s.start();
+            //isServiceStarted = true;
+            startService(serviceIntent);
+            bindService();
+        }
 		if (v.getId() == R.id.button2) {
-			s.close();
-			try {
-				s.join();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			stopService(serviceIntent);
+			unbindService();
+            //isServiceStarted = false;
+		    //s.close();
+			//try {
+			//	s.join();
+			//} catch (InterruptedException e) {
+			//	e.printStackTrace();
+			//}
 		}
 	}
 
-    private Camera.PreviewCallback mPreviewCallback = new Camera.PreviewCallback() {
-
-        @Override
-        public void onPreviewFrame(byte[] data, Camera camera) {
-            takenImage = convertYuvToJpeg(data, camera);
-        }
-
-        private byte[] convertYuvToJpeg(byte[] data, Camera camera) {
-            YuvImage image = new YuvImage(data, ImageFormat.NV21, camera.getParameters().getPreviewSize().width, camera.getParameters().getPreviewSize().height, null);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            int quality = 100;
-            image.compressToJpeg(new Rect(0, 0, camera.getParameters().getPreviewSize().width, camera.getParameters().getPreviewSize().height), quality, baos);//this line decreases the image quality
-
-            return baos.toByteArray();
-        }
-    };
-
-    public static Camera getCameraInstance(){
-        Camera c = null;
-        try {
-            c = Camera.open(0);
-        }
-        catch (Exception e){
-            Log.e("LS_SERVER", "Camera doesnt exists");
-        }
-        return c;
+	private void bindService() {
+        bindService(new Intent(this, HttpServerService.class), mConnection, Context.BIND_AUTO_CREATE);
+        mIsBound = true;
     }
+
+    private void unbindService() {
+        if (mIsBound)
+        {
+            // Detach our existing connection.
+            unbindService(mConnection);
+            mIsBound = false;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d("LS_SERVER", "here");
+        mService.disconnect();
+        super.onDestroy();
+        unbindService();
+    }
+
 
 }

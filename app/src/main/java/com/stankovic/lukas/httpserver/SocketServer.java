@@ -32,13 +32,13 @@ public class SocketServer extends Thread {
 
     private Handler loggingHandler;
 
-    private EditText eTMaxThreads;
+    private int maxThreads;
 
-    public SocketServer(Handler handler, EditText eTMaxThreads, Context context) {
+    public SocketServer(Handler handler, int maxThreads, Context context) {
         super();
 
         this.loggingHandler = handler;
-        this.eTMaxThreads = eTMaxThreads;
+        this.maxThreads = maxThreads;
         this.context = context;
     }
 
@@ -57,8 +57,6 @@ public class SocketServer extends Thread {
             serverSocket = new ServerSocket(port);
             bRunning = true;
 
-            String etMaxThreadsText = String.valueOf(eTMaxThreads.getText());
-            int maxThreads = !etMaxThreadsText.equals("") ? Integer.parseInt(etMaxThreadsText) : 0;
             Semaphore semaphore = new Semaphore(maxThreads);
 
             while (bRunning) {

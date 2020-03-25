@@ -10,6 +10,7 @@ import com.stankovic.lukas.httpserver.File.FileReader;
 import com.stankovic.lukas.httpserver.Http.Response.HttpStatusCode;
 import com.stankovic.lukas.httpserver.Http.Response.Response;
 import com.stankovic.lukas.httpserver.HttpServerActivity;
+import com.stankovic.lukas.httpserver.HttpServerService;
 import com.stankovic.lukas.httpserver.Libs.SizeConverter;
 
 import java.io.File;
@@ -37,9 +38,9 @@ public class CameraStreamController extends BaseController {
 
     @Override
     public void render() throws IOException {
-        this.sendMessage("request", "GET /camera/stream/ (" + SizeConverter.formatFileSize(HttpServerActivity.takenImage.length) + ")");
+        this.sendMessage("request", "GET /camera/stream/ (" + SizeConverter.formatFileSize(HttpServerService.takenImage.length) + ")");
         while (!socket.isClosed()) {
-            byte[] takenImage = HttpServerActivity.takenImage;
+            byte[] takenImage = HttpServerService.takenImage;
             response.setHttpStatusCode(HttpStatusCode.OK);
             response.setContentType("multipart/x-mixed-replace;boundary=lsboundary");
             response.setContentLength((long) takenImage.length);
