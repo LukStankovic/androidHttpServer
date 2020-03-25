@@ -85,7 +85,7 @@ public class HttpServerActivity extends Activity implements OnClickListener{
         if (mCamera != null) {
             mPreview = new CameraPreview(this, mCamera);
             ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-            executor.scheduleAtFixedRate(cameraTakingPictures, 0, 300, TimeUnit.MILLISECONDS);
+            executor.scheduleAtFixedRate(cameraTakingPictures, 0, 500, TimeUnit.MILLISECONDS);
         }
     }
 

@@ -9,6 +9,7 @@ import android.util.Log;
 import com.stankovic.lukas.httpserver.Controller.BaseController;
 import com.stankovic.lukas.httpserver.Controller.CameraSnapshotController;
 import com.stankovic.lukas.httpserver.Controller.CameraStreamController;
+import com.stankovic.lukas.httpserver.Controller.CgiController;
 import com.stankovic.lukas.httpserver.Controller.FileController;
 import com.stankovic.lukas.httpserver.Controller.ListingController;
 import com.stankovic.lukas.httpserver.Controller.NotFoundController;
@@ -117,6 +118,8 @@ public class RequestHandler implements Runnable {
             controller = new CameraSnapshotController(response);
         } else if (requestReader.getUri().equals("/camera/stream/") || requestReader.getUri().equals("/camera/stream")) {
             controller = new CameraStreamController(response, socket);
+        } else if (requestReader.getUri().contains("/cgi-bin/")) {
+            controller = new CgiController(response, requestReader.getUri());
         } else if (!file.exists()) {
             controller = new NotFoundController(response);
         } else {
