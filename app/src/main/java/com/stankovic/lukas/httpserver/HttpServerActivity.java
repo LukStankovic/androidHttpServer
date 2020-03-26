@@ -1,5 +1,8 @@
 package com.stankovic.lukas.httpserver;
 
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.app.Activity;
@@ -21,6 +24,7 @@ import android.widget.TextView;
 import com.stankovic.lukas.httpserver.Camera.CameraPreview;
 import com.stankovic.lukas.httpserver.Libs.SizeConverter;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -41,6 +45,8 @@ public class HttpServerActivity extends Activity implements OnClickListener{
     private Camera mCamera;
 
     private CameraPreview mPreview;
+
+
 
     public static byte[] takenImage;
 
@@ -79,22 +85,14 @@ public class HttpServerActivity extends Activity implements OnClickListener{
         textView.setMovementMethod(new ScrollingMovementMethod());
 
         etMaxThreads = (EditText) findViewById(R.id.etMaxThreads);
-
         mCamera = getCameraInstance();
 
         if (mCamera != null) {
-            mPreview = new CameraPreview(this, mCamera);
-            ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-            executor.scheduleAtFixedRate(cameraTakingPictures, 0, 500, TimeUnit.MILLISECONDS);
+            mCamera.startPreview();
+            mCamera.setPreviewCallback(mPreviewCallback);
         }
     }
 
-    Runnable cameraTakingPictures = new Runnable() {
-        public void run() {
-            mCamera.startPreview();
-            mCamera.takePicture(null, null, mPicture);
-        }
-    };
 
 	@Override
 	public void onClick(View v) {
@@ -113,27 +111,20 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 		}
 	}
 
-    private Camera.PictureCallback mPicture = new Camera.PictureCallback() {
+    private Camera.PreviewCallback mPreviewCallback = new Camera.PreviewCallback() {
 
         @Override
-        public void onPictureTaken(byte[] data, Camera camera) {
-            takenImage = data;
-            File pictureFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/snapshot.jpg");
+        public void onPreviewFrame(byte[] data, Camera camera) {
+            takenImage = convertYuvToJpeg(data, camera);
+        }
 
-            if (pictureFile == null){
-                Log.d("LS_SERVER", "Error creating media file, check storage permissions");
-                return;
-            }
+        private byte[] convertYuvToJpeg(byte[] data, Camera camera) {
+            YuvImage image = new YuvImage(data, ImageFormat.NV21, camera.getParameters().getPreviewSize().width, camera.getParameters().getPreviewSize().height, null);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            int quality = 100;
+            image.compressToJpeg(new Rect(0, 0, camera.getParameters().getPreviewSize().width, camera.getParameters().getPreviewSize().height), quality, baos);//this line decreases the image quality
 
-            try {
-                FileOutputStream fos = new FileOutputStream(pictureFile);
-                fos.write(data);
-                fos.close();
-            } catch (FileNotFoundException e) {
-                Log.d("LS_SERVER", "File not found: " + e.getMessage());
-            } catch (IOException e) {
-                Log.d("LS_SERVER", "Error accessing file: " + e.getMessage());
-            }
+            return baos.toByteArray();
         }
     };
 
