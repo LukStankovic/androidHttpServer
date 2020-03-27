@@ -24,8 +24,6 @@ import com.stankovic.lukas.httpserver.Libs.SizeConverter;
 
 public class HttpServerActivity extends Activity implements OnClickListener{
 
-	private SocketServer s;
-
 	private int transferedBytes = 0;
 
 	private EditText etMaxThreads;
@@ -57,14 +55,12 @@ public class HttpServerActivity extends Activity implements OnClickListener{
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             mService = ((HttpServerService.LocalBinder)iBinder).getInstance();
-            mService.connect();
             mService.setHandler(handler);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             Log.d("LS_SERVER", "zde");
-            mService.disconnect();
             mService = null;
         }
     };
@@ -97,24 +93,15 @@ public class HttpServerActivity extends Activity implements OnClickListener{
 
         Intent serviceIntent = new Intent(HttpServerActivity.this, HttpServerService.class);
         serviceIntent.putExtra("maxThreads", maxThreads);
+        serviceIntent.putExtra("connectedToActivity", true);
 
         if (v.getId() == R.id.button1) {
-			//s = new SocketServer(handler, etMaxThreads, this);
-			//s.start();
-            //isServiceStarted = true;
             startService(serviceIntent);
             bindService();
         }
 		if (v.getId() == R.id.button2) {
 			stopService(serviceIntent);
 			unbindService();
-            //isServiceStarted = false;
-		    //s.close();
-			//try {
-			//	s.join();
-			//} catch (InterruptedException e) {
-			//	e.printStackTrace();
-			//}
 		}
 	}
 
@@ -135,7 +122,6 @@ public class HttpServerActivity extends Activity implements OnClickListener{
     @Override
     protected void onDestroy() {
         Log.d("LS_SERVER", "here");
-        mService.disconnect();
         super.onDestroy();
         unbindService();
     }

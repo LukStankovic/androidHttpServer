@@ -101,13 +101,15 @@ public class RequestHandler implements Runnable {
     }
 
     private synchronized void sendMessage(String type, String messageText) {
-        Bundle bundle = new Bundle();
+        if (loggingHandler != null) {
+            Bundle bundle = new Bundle();
 
-        bundle.putString(type, messageText);
-        Message message = Message.obtain();
-        message.setData(bundle);
+            bundle.putString(type, messageText);
+            Message message = Message.obtain();
+            message.setData(bundle);
 
-        loggingHandler.sendMessage(message);
+            loggingHandler.sendMessage(message);
+        }
     }
 
     private synchronized void handleRequest() throws IOException {

@@ -14,7 +14,6 @@ import android.util.Log;
 
 import android.widget.Toast;
 
-
 import java.io.ByteArrayOutputStream;
 
 
@@ -24,21 +23,17 @@ public class HttpServerService extends Service {
 
     private int maxThreads = 0;
 
-    private boolean isActivityConnected = true;
-
     private final IBinder mIBinder = new LocalBinder();
 
-    public void disconnect() {
-        isActivityConnected = false;
-    }
+    public SocketServer s = null;
 
-    public void connect() {
-        isActivityConnected = true;
-    }
+    private Camera mCamera;
 
-    public class LocalBinder extends Binder
+    public static byte[] takenImage;
+
+    class LocalBinder extends Binder
     {
-        public HttpServerService getInstance()
+        HttpServerService getInstance()
         {
             return HttpServerService.this;
         }
@@ -49,25 +44,20 @@ public class HttpServerService extends Service {
     {
         if (intent != null) {
             maxThreads = intent.getIntExtra("maxThreads", 5);
+        } else {
+            s = new SocketServer(null, 10, this);
+            s.start();
         }
 
-        Log.d("LS_SERVER", "isActivityConnected onStartCommand: " + isActivityConnected);
-
-        s = new SocketServer(handler, maxThreads, this);
-        s.start();
-
-
-        return START_STICKY; // or whatever your flag
+        return START_STICKY;
     }
-
 
     @Override
     public void onCreate() {
         HandlerThread thread = new HandlerThread("ServiceStartArguments");
         thread.start();
-
         Toast.makeText(this, "Starting service", Toast.LENGTH_SHORT).show();
-        Log.d("LS_SERVER", "isActivityConnected onCreate: " + isActivityConnected);
+
         mCamera = getCameraInstance();
         if (mCamera != null) {
             mCamera.startPreview();
@@ -75,12 +65,20 @@ public class HttpServerService extends Service {
         }
     }
 
-    public SocketServer s = null;
+    @Override
+    public void onDestroy() {
+        Toast.makeText(this, "Stopping service", Toast.LENGTH_SHORT).show();
+        try {
+            s.close();
+            s.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-    private Camera mCamera;
-
-
-    public static byte[] takenImage;
+        if(handler != null) {
+            handler = null;
+        }
+    }
 
     private Camera.PreviewCallback mPreviewCallback = new Camera.PreviewCallback() {
 
@@ -102,7 +100,7 @@ public class HttpServerService extends Service {
     public static Camera getCameraInstance(){
         Camera c = null;
         try {
-            c = Camera.open(0);
+            c = Camera.open();
         }
         catch (Exception e){
             Log.e("LS_SERVER", "Camera doesnt exists");
@@ -115,35 +113,9 @@ public class HttpServerService extends Service {
         return mIBinder;
     }
 
-    @Override
-    public void onDestroy() {
-        Log.d("LS_SERVER", "stopping service");
-        Toast.makeText(this, "Stopping service", Toast.LENGTH_SHORT).show();
-        try {
-            s.close();
-            s.join();
-        } catch (InterruptedException e) {
-        	e.printStackTrace();
-        }
-
-        if(handler != null) {
-            handler = null;
-        }
-    }
-
     public void setHandler(Handler handler) {
-        //Log.d("LS_SERVER", "setHandler: " + (this.handler == null && s == null));
-        //if (this.handler == null && s == null) {
-
-        try {
-            s.close();
-            s.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-            this.handler = handler;
-            s = new SocketServer(handler, maxThreads, this);
-            s.start();
-      //  }
+        this.handler = handler;
+        s = new SocketServer(handler, maxThreads, this);
+        s.start();
     }
 }
