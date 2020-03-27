@@ -1,6 +1,7 @@
 package com.stankovic.lukas.httpserver.Controller;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
@@ -30,6 +31,9 @@ public class BaseController implements IBaseController {
         Message message = Message.obtain();
         message.setData(bundle);
 
-        response.getLoggingHandler().sendMessage(message);
+        Handler handler = response.getLoggingHandler();
+        if (handler != null) {
+            handler.sendMessage(message);
+        }
     }
 }
