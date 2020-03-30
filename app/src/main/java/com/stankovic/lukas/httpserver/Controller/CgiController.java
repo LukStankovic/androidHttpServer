@@ -9,6 +9,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 
 public class CgiController extends BaseController {
@@ -18,6 +22,8 @@ public class CgiController extends BaseController {
     private String command = "";
 
     private String arguments = "";
+
+    private String[] allArguments;
 
     public CgiController() {
         super();
@@ -42,7 +48,11 @@ public class CgiController extends BaseController {
             if (arguments.equals("")) {
                 processBuilder.command(command);
             } else {
-                processBuilder.command(command, arguments);
+                List<String> all = new ArrayList<>();
+                all.add(command);
+                all.addAll(Arrays.asList(allArguments));
+
+                processBuilder.command(all);
             }
 
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(processBuilder.start().getInputStream()));
@@ -63,7 +73,8 @@ public class CgiController extends BaseController {
     private void loadArguments() {
         Uri commandUri = Uri.parse(uri);
         commandUri.getPath();
-        String[] split = uri.split("%20", 2);
+        String[] split = uri.split("%20");
+        allArguments = split;
         if (split.length > 1) {
             arguments = split[1];
 
