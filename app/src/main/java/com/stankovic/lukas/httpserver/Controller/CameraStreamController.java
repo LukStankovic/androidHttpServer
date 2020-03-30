@@ -39,11 +39,13 @@ public class CameraStreamController extends BaseController {
     @Override
     public void render() throws IOException {
         this.sendMessage("request", "GET /camera/stream/ (" + SizeConverter.formatFileSize(HttpServerService.takenImage.length) + ")");
+        byte[] takenImage = HttpServerService.takenImage;
+        response.setHttpStatusCode(HttpStatusCode.OK);
+        response.setContentType("multipart/x-mixed-replace;boundary=lsboundary");
+        response.setContentLength((long) takenImage.length);
+
         while (!socket.isClosed()) {
-            byte[] takenImage = HttpServerService.takenImage;
-            response.setHttpStatusCode(HttpStatusCode.OK);
-            response.setContentType("multipart/x-mixed-replace;boundary=lsboundary");
-            response.setContentLength((long) takenImage.length);
+            takenImage = HttpServerService.takenImage;
             response.returnMJpegStream(takenImage);
             this.sendMessage("transferred_bytes", String.valueOf(takenImage.length));
        }
