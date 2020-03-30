@@ -8,6 +8,7 @@ import com.stankovic.lukas.httpserver.Http.Response.Response;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URLDecoder;
 
 
 public class CgiController extends BaseController {
@@ -62,7 +63,7 @@ public class CgiController extends BaseController {
     private void loadArguments() {
         Uri commandUri = Uri.parse(uri);
         commandUri.getPath();
-        String[] split = uri.split("%20");
+        String[] split = uri.split("%20", 2);
         if (split.length > 1) {
             arguments = split[1];
 
@@ -70,6 +71,8 @@ public class CgiController extends BaseController {
                 arguments = arguments.substring(0, arguments.length() - 1);
             }
         }
+
+        arguments = URLDecoder.decode(arguments);
     }
 
     private void loadCommand() {
